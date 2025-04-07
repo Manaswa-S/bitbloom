@@ -15,6 +15,8 @@ A lightweight, thread-safe, and customizable <a href="https://en.wikipedia.org/w
 - Persist/Load from file or JSON
 
 ---
+> _Note: BitBloom was built as a foundational exercise. Expect bigger, more intricate systems soon._
+---
 
 ## Install
 
@@ -55,7 +57,7 @@ fmt.Println(bloom.OnesCount())
 - Custom seeding
 
 ------
-## DETAILED EXPLAINATION
+### DETAILED EXPLAINATION
 
 ##### Hashing
 
@@ -83,5 +85,11 @@ func(input string, seed uint64) uint64
 
 - Saving a writes the bloom array as it is to a file, and therefore might incur corrupt files sometimes. (this will be resolved in further revisions by implementing a checksum)
 
+
+---
+
+##### License
+
+[MIT License](./LICENSE)
 
 
