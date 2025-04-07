@@ -1,14 +1,15 @@
 package main
 
 import (
-	"bitbloom/bitbloom"
-	"bitbloom/hashing"
 	"bufio"
 	"fmt"
 	"math"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/Manaswa-S/bitbloom/bitbloom"
+	"github.com/Manaswa-S/bitbloom/hashing"
 )
 
 var bloomSize uint64 = 200_000

@@ -1,12 +1,13 @@
 package bitbloom
 
 import (
-	"bitbloom/hashing"
 	"encoding/json"
 	"fmt"
 	"math/bits"
 	"os"
 	"sync"
+
+	"github.com/Manaswa-S/bitbloom/hashing"
 )
 
 
