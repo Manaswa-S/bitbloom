@@ -7,32 +7,62 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 )
 
-var bloomSize int64 = 200_000
+var bloomSize uint64 = 200_000
 
 func main() {
-	// bloomMenu()
+	bloomMenu()
 	// testMurMur()
 	// testxxHash()
-	testDistribution()
+	// testDistribution()
 }
+
+
+func takeInp() (string, error) {
+
+	reader := bufio.NewReader(os.Stdin)
+	inpStr, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	inpStr = strings.TrimSpace(inpStr)
+
+	return inpStr, nil
+}
+
+
+// What all can it do:
+// 1) Init BitBloom
+// 2) Add an element
+// 3) Check if an element is present
+// 4) Print the bytes of the bloom array
+// 5) Count the ones in the bloom array
+// 6) Reset the bloom array to 0's
+// 7) Save the bloom array to a file
+// 8) Load the bloom array from a file
+
+
 
 
 func bloomMenu() {
     fmt.Printf("----- Bloom Filter Implementation In Go ----- \n")
     
-	bb := bitbloom.NewBitBloom(bloomSize, nil)
+	bb := bitbloom.NewBitBloom(bloomSize, 0, nil, nil)
 
     menuStart:
 
-    fmt.Printf( 
-    "\n1) Add one element. \n" + 
+    fmt.Printf( "\n" +
+    "1) Add one element. \n" + 
     "2) Search for an element. \n" + 
-    "3) Add entire array of elements. \n" + 
-    "4) Print entire bloom array. \n" +
-    "5) MurMur Demo \n" +
+    "3) Print entire bloom array. \n" + 
+    "4) Count ones in bloom array. \n" +
+    "5) Reset bloom array. \n" +
+	"6) Save bloom array to file. \n" +
+	"7) Load bloom array from file. \n" +
+	"8) Add entire array of elements. \n" +
     "0) Exit. \n" + 
     " > Choice : ")
 
@@ -46,15 +76,14 @@ func bloomMenu() {
     switch choice {
     case 1:
         // Add one element 
-        var elem string
         fmt.Print("Enter new element : ")
-        _, err := fmt.Scanln(&elem)
-        if err != nil {
-            fmt.Printf("Something went wrong : %v\n", err)
-            break
-        }
+		toAdd, err := takeInp()
+		if err != nil {
+			fmt.Println("Something went wrong while trying to read from os.StdIn. Try again.")
+			break
+		}
 
-        done := bb.AddElem(elem)
+        done := bb.Add(toAdd)
         if !done {
             fmt.Println("Something went wrong : could not add new element.")
             break
@@ -64,40 +93,53 @@ func bloomMenu() {
     case 2:
         // Search for an element.
         fmt.Print("Enter element to search : ")
-        reader := bufio.NewReader(os.Stdin)
-        toSearch, err := reader.ReadString('\n')
-        if err != nil {
-            fmt.Printf("Something went wrong : %v\n", err)
-            break
-        }
-        fmt.Printf("\nSearching for : %s\n", toSearch)
+        toSearch, err := takeInp()
+		if err != nil {
+			fmt.Println("Something went wrong while trying to read from os.StdIn. Try again.")
+			break
+		}
 
-        // found := findElem(toSearch)
-        // if found {
-        //     fmt.Println("Element probably exists.")
-        // } else {
-        //     fmt.Println("Element does not exist.")
-        // }
+        found := bb.Contains(toSearch)
+        if found {
+            fmt.Println("Element probably exists.")
+        } else {
+            fmt.Println("Element does not exist.")
+        }
 
     case 3:
+		// Print entire bloom array
+		bb.PrintBloom()
+
+    case 4:
+        // Count ones
+		fmt.Printf("Ones Count : %d\n", bb.OnesCount())
+    
+	case 5:
+        // Reset bloom array.
+		bb.Reset()
+	
+	case 6:
+		bb.SaveToFile("filename")
+
+	case 7:
+		bb.LoadFromFile("filename")
+
+	case 8:
         // Add entire slice.
         elems := WordsGenerator()
         for _, elem := range elems {
-            done := bb.AddElem(elem)
+            done := bb.Add(elem)
             if !done {
                 fmt.Println("Something went wrong : could not add new element.")
+				break
             }
         }
 
-    case 4:
-        // Print entire bloom array as bits
-        // printBloom()
-    case 5:
-        // MurMur("")
     case 0:
         fmt.Println("Exiting ...")
         return
-    default:
+    
+	default:
         fmt.Println("Wrong choice. Try again.")
     }
 
@@ -139,7 +181,6 @@ func WordsGenerator() (words []string) {
 
 	return
 }
-
 
 func testMurMur() {
 
@@ -269,7 +310,6 @@ func testxxHash() {
 	// fmt.Printf("Collision Rate : %f\n", collisionRate)
 }
 
-
 func testDistribution() {
 
 	// var wg sync.WaitGroup
@@ -297,7 +337,8 @@ func testDistribution() {
 				}
 			} else {
 				hashSet[xxhash] = str
-				counts[(xxhash * uint64(buckets)) >> 64]++
+				// counts[(xxhash * uint64(buckets)) >> 64]++
+				counts[xxhash % uint64(buckets)]++
 			}
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

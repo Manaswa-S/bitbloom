@@ -2,7 +2,6 @@ package bitbloom
 
 import (
 	"bitbloom/hashing"
-	"encoding/json"
 	"fmt"
 	"math/bits"
 	"os"
@@ -15,10 +14,6 @@ type BitBloom struct {
 	bloom []byte // the filter array
 	mu sync.Mutex
 	irotations uint64 // the number of index rotations to perform while index calculation
-
-	// 			func(toHash, seed) hash
-	hashFuncs []func(string, uint64) uint64 // only two for now
-	hashSeeds []uint64 // the seeds for the hash funcs
 }
 
 // NewBitBloom initializes a new bloom filter. 
@@ -28,7 +23,7 @@ type BitBloom struct {
 // 	Default Values : 
 //	ir = 4
 //	bloomSize = 20_000
-func NewBitBloom(bloomSize uint64, ir uint64, hFs []func(string, uint64) uint64, hSs []uint64) *BitBloom {
+func NewBitBloom(bloomSize uint64, ir uint64) *BitBloom {
 
 	// TODO: maybe custom/configurable user given hash functions ?
 
@@ -43,22 +38,12 @@ func NewBitBloom(bloomSize uint64, ir uint64, hFs []func(string, uint64) uint64,
 		bloomSize = defaultBloomSize
 	}
 
-	if len(hFs) < 2 {
-		hFs = append(hFs, hashing.XXHash64)
-		hFs = append(hFs, hashing.Murmur3_32)
-
-		hSs = append(hSs, 0)
-		hSs = append(hSs, 0)
-	}
-
 	return &BitBloom{
 		BloomSize: bloomSize,
 		bloom: make([]byte, (bloomSize / 8) + 1),
 
 		mu: sync.Mutex{},
 		irotations: ir,
-		hashFuncs: hFs,
-		hashSeeds: hSs,
 	}
 }
 
@@ -94,14 +79,14 @@ func (bb *BitBloom) Contains(elem string) bool {
 
 // getHashes gets the indexes determined from the hashes.
 func (bb *BitBloom) getHashes(elem string) []uint64 {
-
-	hash1_xh := bb.hashFuncs[0](elem, bb.hashSeeds[0])
-	hash2_mh := bb.hashFuncs[1](elem, bb.hashSeeds[1])
+	xhash := hashing.XXHash64(elem, 0)
+	murhash := hashing.Murmur3_32(elem, 0)
 
 	indexes := make([]uint64, bb.irotations)  
-	for i := uint64(1); i <= bb.irotations; i++ {
+	for i := uint64(0); i < bb.irotations; i++ {
 		// TODO: may want to use something better than just (i * hash)
-		indexes[i] = (hash1_xh + (i * hash2_mh)) % bb.BloomSize
+		hash := (xhash + (i * murhash)) % bb.BloomSize
+		indexes = append(indexes, hash)
 	}
 
 	return indexes
@@ -119,7 +104,7 @@ func (bb *BitBloom) PrintBloom() {
 }
 
 // BitCount returns the ones count in the bloom array.
-func (bb *BitBloom) OnesCount() int {
+func (bb *BitBloom) BitCount() int {
 	count := 0
 	for _, b := range bb.bloom {
 		count += bits.OnesCount8(b)
@@ -151,7 +136,6 @@ func (bb *BitBloom) LoadFromFile(filename string) error {
 		return err
 	}
 	bb.BloomSize = uint64(len(data))
-	// TODO: this is wrong, length errors can occur
 	copy(bb.bloom, data)
 	return nil
 }
@@ -163,47 +147,13 @@ func (bb *BitBloom) LoadFromFile(filename string) error {
 
 // TODO: add dynamic resizing of the main bloom array.
 
-// TODO: add benchmarks and unit tests
-
-
-
-
-
-
-
-
-
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // trials
 
-type BitBloomCaps struct {
-	BloomSize uint64 // the total number of bits in the filter
-	Bloom []byte // the filter array
-	IRotations uint64 // the number of index rotations to perform while index calculation
-}
 
-func (bb *BitBloom) SaveJSON() {
-
-	data := BitBloomCaps{
-		BloomSize: bb.BloomSize,
-		Bloom: bb.bloom,
-		IRotations: bb.irotations,
-	}
-
-	f, err := os.Create("json")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", " ")
-	err = enc.Encode(data)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-}	
+// func (bb *BitBloom) trial1() {
+// 	ubloom := make([]uint8, 0)
+	
+// }
