@@ -94,4 +94,13 @@ func(input string, seed uint64) uint64
 
 [MIT License](./LICENSE)
 
+---
 
+### Extras
+
+#### 
+```bash
+go get github.com/Manaswa-S/bitbloom
+```
+ - includes a 'hashing' package containing my own implementations of the MurMurHash, XxHash, FNV-1a, etc.
+ - Also included in 'main' is the CLI menu/tool for bitbloom for testing/trial purposes.
